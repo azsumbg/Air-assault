@@ -59,9 +59,9 @@ D2D1_RECT_F b1Rect{ 50.0f, 5.0f, scr_width / 3.0f - 50.0f, sky - 5.0f };
 D2D1_RECT_F b2Rect{ scr_width / 3.0f + 50.0f, 5.0f, scr_width * 2.0f / 3.0f  - 50.0f, sky - 5.0f };
 D2D1_RECT_F b3Rect{ scr_width * 2.0f / 3.0f + 50.0f, 5.0f, scr_width - 50.0f, sky - 5.0f };
 
-D2D1_RECT_F b1TxtRect{ 80.0f, 15.0f, scr_width / 3.0f - 50.0f, sky - 5.0f };
-D2D1_RECT_F b2TxtRect{ scr_width / 3.0f + 80.0f, 15.0f, scr_width * 2.0f / 3.0f - 50.0f, sky - 5.0f };
-D2D1_RECT_F b3TxtRect{ scr_width * 2.0f / 3.0f + 70.0f, 15.0f, scr_width - 50.0f, sky - 5.0f };
+D2D1_RECT_F b1TxtRect{ 90.0f, 15.0f, scr_width / 3.0f - 50.0f, sky - 5.0f };
+D2D1_RECT_F b2TxtRect{ scr_width / 3.0f + 90.0f, 15.0f, scr_width * 2.0f / 3.0f - 50.0f, sky - 5.0f };
+D2D1_RECT_F b3TxtRect{ scr_width * 2.0f / 3.0f + 80.0f, 15.0f, scr_width - 50.0f, sky - 5.0f };
 
 bool pause{ false };
 bool in_client{ true };
@@ -1206,11 +1206,38 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
 
 		//////////////////////////////////////////////////////
 
+		if (!vFields.empty())
+		{
+			for (std::vector<dll::GROUND*>::iterator field = vFields.begin(); field < vFields.end(); ++field)
+			{
+				(*field)->dir = assets_move_dir;
 
+				if (!(*field)->move((float)(level)))
+				{
+					if ((*field)->type == tiles::field)
+					{
+						if ((*field)->dir == dirs::down)need_field_up = true;
+						else need_field_down = true;
+					}
+					(*field)->Release();
+					vFields.erase(field);
+					break;
+				}
+			}
+		}
 
-
-
-
+		if (need_field_up)
+		{
+			need_field_up = false;
+			vFields.insert(vFields.begin(), dll::GROUND::create(tiles::field, 0,
+				vFields.front()->start.y - vFields.front()->get_height()));
+		}
+		if (need_field_down)
+		{
+			need_field_down = false;
+			vFields.push_back(dll::GROUND::create(tiles::field, 0,
+				vFields.back()->end.y));
+		}
 
 
 

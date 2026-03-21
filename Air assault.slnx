@@ -1,0 +1,7 @@
+<Solution>
+  <Configurations>
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Project Path="Air assault/Air assault.vcxproj" Id="f6b3bac9-e08e-458e-8e6d-eea87fe9dc4b" />
+</Solution>

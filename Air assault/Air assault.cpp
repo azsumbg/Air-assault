@@ -56,12 +56,12 @@ POINT cur_pos{};
 UINT bTimer{ 0 };
 
 D2D1_RECT_F b1Rect{ 50.0f, 5.0f, scr_width / 3.0f - 50.0f, sky - 5.0f };
-D2D1_RECT_F b2Rect{ scr_width / 3.0f + 50.0f, 5.0f, scr_width * 1.5f - 50.0f, sky - 5.0f };
-D2D1_RECT_F b3Rect{ scr_width * 1.5f + 50.0f, 5.0f, scr_width - 50.0f, sky - 5.0f };
+D2D1_RECT_F b2Rect{ scr_width / 3.0f + 50.0f, 5.0f, scr_width * 2.0f / 3.0f  - 50.0f, sky - 5.0f };
+D2D1_RECT_F b3Rect{ scr_width * 2.0f / 3.0f + 50.0f, 5.0f, scr_width - 50.0f, sky - 5.0f };
 
-D2D1_RECT_F b1TxtRect{ 80.0f, 10.0f, scr_width / 3.0f - 50.0f, sky - 5.0f };
-D2D1_RECT_F b2TxtRect{ scr_width / 3.0f + 80.0f, 10.0f, scr_width * 1.5f - 50.0f, sky - 5.0f };
-D2D1_RECT_F b3TxtRect{ scr_width * 1.5f + 70.0f, 10.0f, scr_width - 50.0f, sky - 5.0f };
+D2D1_RECT_F b1TxtRect{ 80.0f, 15.0f, scr_width / 3.0f - 50.0f, sky - 5.0f };
+D2D1_RECT_F b2TxtRect{ scr_width / 3.0f + 80.0f, 15.0f, scr_width * 2.0f / 3.0f - 50.0f, sky - 5.0f };
+D2D1_RECT_F b3TxtRect{ scr_width * 2.0f / 3.0f + 70.0f, 15.0f, scr_width - 50.0f, sky - 5.0f };
 
 bool pause{ false };
 bool in_client{ true };
@@ -214,7 +214,7 @@ void ClearResources()
 	if (!FreeMem(&bigText))LogErr(L"Error releasing D2D1 bigText !");
 
 	if (!FreeMem(&bmpField))LogErr(L"Error releasing D2D1 bmpField !");
-	if (!FreeMem(&bmpField))LogErr(L"Error releasing D2D1 bmpLogo !");
+	if (!FreeMem(&bmpLogo))LogErr(L"Error releasing D2D1 bmpLogo !");
 	if (!FreeMem(&bmpCloud1))LogErr(L"Error releasing D2D1 bmpCloud1 !");
 	if (!FreeMem(&bmpCloud2))LogErr(L"Error releasing D2D1 bmpCloud2 !");
 	if (!FreeMem(&bmpCloud3))LogErr(L"Error releasing D2D1 bmpCloud3 !");
@@ -323,7 +323,6 @@ void InitGame()
 	Hero = dll::HERO::create(scr_width / 2.0f - 50.0f, ground - 100.0f);
 
 	for (float i = -scr_height; i < 2 * scr_height; i += scr_height)vFields.push_back(dll::GROUND::create(tiles::field, 0, i));
-
 
 }
 
@@ -615,7 +614,7 @@ void CreateResources()
 			ID2D1GradientStopCollection* gColl{ nullptr };
 
 			hr = Draw->CreateSolidColorBrush(D2D1::ColorF(D2D1::ColorF::DarkBlue), &statBrush);
-			hr = Draw->CreateSolidColorBrush(D2D1::ColorF(D2D1::ColorF::Lime), &txtBrush);
+			hr = Draw->CreateSolidColorBrush(D2D1::ColorF(D2D1::ColorF::Green), &txtBrush);
 			hr = Draw->CreateSolidColorBrush(D2D1::ColorF(D2D1::ColorF::Red), &hgltBrush);
 			hr = Draw->CreateSolidColorBrush(D2D1::ColorF(D2D1::ColorF::DarkOrange), &inactBrush);
 
@@ -718,7 +717,7 @@ void CreateResources()
 				LogErr(L"Error loading bmpTree2Tile !");
 				ErrExit(eD2D);
 			}
-			bmpTree1Tile = Load(L".\\res\\img\\field\\tree3.png", Draw);
+			bmpTree3Tile = Load(L".\\res\\img\\field\\tree3.png", Draw);
 			if (!bmpTree3Tile)
 			{
 				LogErr(L"Error loading bmpTree3Tile !");
@@ -1155,7 +1154,7 @@ void CreateResources()
 	}
 
 	mciSendString(L"play .\\res\\snd\\intro.wav", NULL, NULL, NULL);
-	for (int i = 0; i <= 80; ++i)
+	for (int i = 0; i <= 120; ++i)
 	{
 		Draw->BeginDraw();
 		Draw->DrawBitmap(bmpIntro[IntroFrame()], D2D1::RectF(0, 0, scr_width, scr_height));
@@ -1182,6 +1181,30 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
 		ErrExit(eWindow);
 	}
 
+	CreateResources();
+
+	while (bMsg.message != WM_QUIT)
+	{
+		if ((bRet = PeekMessage(&bMsg, NULL, NULL, NULL, PM_REMOVE)) != 0)
+		{
+			if (bRet == -1)ErrExit(eMsg);
+
+			TranslateMessage(&bMsg);
+			DispatchMessage(&bMsg);
+		}
+
+		if (pause)
+		{
+			if (show_help)continue;
+			Draw->BeginDraw();
+			Draw->Clear(D2D1::ColorF(D2D1::ColorF::DarkKhaki));
+			if (bigText && hgltBrush)Draw->DrawTextW(L"ПАУЗА", 6, bigText,
+				D2D1::RectF(scr_width / 2.0f - 100.0f, scr_height / 2.0f - 50.0f, scr_width, scr_height), hgltBrush);
+			Draw->EndDraw();
+			continue;
+		}
+
+		//////////////////////////////////////////////////////
 
 
 
@@ -1192,6 +1215,79 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+		// DRAW THINGS ************************************************
+
+		Draw->BeginDraw();
+
+		if (!vFields.empty())
+			for (int i = 0; i < vFields.size(); ++i)
+				if ((vFields[i]->start.y >= 0 && vFields[i]->start.y <= scr_height)
+					|| (vFields[i]->end.y >= 0 && vFields[i]->end.y <= scr_height))
+					Draw->DrawBitmap(bmpField, D2D1::RectF(vFields[i]->start.x, vFields[i]->start.y,
+						vFields[i]->end.x, vFields[i]->end.y));
+
+		if (nrmText && statBrush && txtBrush && hgltBrush && inactBrush && b1Bckg && b2Bckg && b3Bckg)
+		{
+			Draw->FillRectangle(D2D1::RectF(0, 0, scr_width, 50.0f), statBrush);
+			Draw->FillRoundedRectangle(D2D1::RoundedRect(b1Rect, 10.0f, 15.0f), b1Bckg);
+			Draw->FillRoundedRectangle(D2D1::RoundedRect(b2Rect, 10.0f, 15.0f), b2Bckg);
+			Draw->FillRoundedRectangle(D2D1::RoundedRect(b3Rect, 10.0f, 15.0f), b3Bckg);
+			if (name_set)Draw->DrawTextW(L"ИМЕ НА ПИЛОТ", 13, nrmText, b1TxtRect, inactBrush);
+			else
+			{
+				if(!b1Hglt)Draw->DrawTextW(L"ИМЕ НА ПИЛОТ", 13, nrmText, b1TxtRect, txtBrush);
+				else Draw->DrawTextW(L"ИМЕ НА ПИЛОТ", 13, nrmText, b1TxtRect, hgltBrush);
+			}
+			if (!b2Hglt)Draw->DrawTextW(L"ЗВУЦИ ON / OFF", 15, nrmText, b2TxtRect, txtBrush);
+			else Draw->DrawTextW(L"ЗВУЦИ ON / OFF", 15, nrmText, b2TxtRect, hgltBrush);
+			if (!b3Hglt)Draw->DrawTextW(L"ПОМОЩ ЗА ИГРАТА", 16, nrmText, b3TxtRect, txtBrush);
+			else Draw->DrawTextW(L"ПОМОЩ ЗА ИГРАТА", 16, nrmText, b3TxtRect, hgltBrush);
+		}
+		
+		///////////////////////////////////////////////////////////////
+
+		if (Hero)
+		{
+			int current_frame = Hero->get_frame();
+
+			switch (Hero->get_move_dir())
+			{
+			case move_dirs::straight:
+				Draw->DrawBitmap(bmpHeroS[current_frame], Resizer(bmpHeroS[current_frame], Hero->start.x, Hero->start.y));
+				break;
+
+			case move_dirs::left:
+				Draw->DrawBitmap(bmpHeroL[current_frame], Resizer(bmpHeroS[current_frame], Hero->start.x, Hero->start.y));
+				break;
+
+			case move_dirs::right:
+				Draw->DrawBitmap(bmpHeroR[current_frame], Resizer(bmpHeroS[current_frame], Hero->start.x, Hero->start.y));
+				break;
+			}
+
+			if (Hero->dir == dirs::down)assets_move_dir = dirs::up;
+			else assets_move_dir = dirs::down;
+		}
+
+		
+
+		///////////////////////////////////////////////////////////////
+		Draw->EndDraw();
+	}
 
 	ClearResources();
 	std::remove(tmp_file);

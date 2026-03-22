@@ -158,6 +158,8 @@ ID2D1Bitmap* bmpIntro[72]{ nullptr };
 
 ////////////////////////////////////////////////////////
 
+dll::RANDIT RandIt{};
+
 dll::HERO* Hero{ nullptr };
 
 std::vector<dll::GROUND*>vFields;
@@ -1264,6 +1266,134 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
 				vFields.back()->end.y));
 		}
 
+		if (vTiles.size() < 40 + level && RandIt(0, 100) == 66)
+		{
+			int type = RandIt(0, 3);
+
+			if (type == 0)
+			{
+				float tx = RandIt(0.0f, scr_width - 320.0f);
+				float ty = RandIt(-scr_height / 3.0f, sky - 200.0f);
+
+				for (int row = 0; row < 5; ++row)
+				{
+					for (int col = 0; col < 10; ++col)
+					{
+						dll::GROUND* sea_tile{ dll::GROUND::create(tiles::sea, tx, ty) };
+						bool is_ok = true;
+						if (!vTiles.empty())
+						{
+							for (int i = 0; i < vTiles.size(); ++i)
+							{
+								FRECT dummy{ sea_tile->start.x + 1.0f, sea_tile->start.y + 1.0f, 
+									sea_tile->end.x + 1.0f, sea_tile->end.y + 1.0f };
+
+								if (dll::Intersect(FRECT{ vTiles[i]->start.x,vTiles[i]->start.y, 
+									vTiles[i]->end.x, vTiles[i]->end.y }, dummy))
+								{
+									is_ok = false;
+									break;
+								}
+							}
+						}
+
+						if (is_ok) vTiles.push_back(sea_tile);
+
+						tx += 32.0f;
+					}
+
+					tx -= 320.0f;
+					ty += 32.0f;
+				}
+			}
+			else if (type == 1)
+			{
+				float tx = RandIt(0.0f, scr_width - 200.0f);
+				float ty = RandIt(-scr_height / 3.0f, sky - 200.0f);
+
+				dll::GROUND* tree_tile{ dll::GROUND::create(tiles::tree1, tx, ty) };
+
+				bool is_ok = true;
+
+				if (!vTiles.empty())
+				{
+					for (int i = 0; i < vTiles.size(); ++i)
+					{
+						if (dll::Intersect(FRECT{ vTiles[i]->start.x,vTiles[i]->start.y, vTiles[i]->end.x,vTiles[i]->end.y },
+							FRECT{ tree_tile->start.x, tree_tile->start.y, tree_tile->end.x, tree_tile->end.y }))
+						{
+							is_ok = false;
+							break;
+						}
+					}
+				}
+
+				if (is_ok)vTiles.push_back(tree_tile);
+			}
+			else if (type == 2)
+			{
+				float tx = RandIt(0.0f, scr_width - 200.0f);
+				float ty = RandIt(-scr_height / 3.0f, sky - 200.0f);
+
+				dll::GROUND* tree_tile{ dll::GROUND::create(tiles::tree2, tx, ty) };
+
+				bool is_ok = true;
+
+				if (!vTiles.empty())
+				{
+					for (int i = 0; i < vTiles.size(); ++i)
+					{
+						if (dll::Intersect(FRECT{ vTiles[i]->start.x,vTiles[i]->start.y, vTiles[i]->end.x,vTiles[i]->end.y },
+							FRECT{ tree_tile->start.x, tree_tile->start.y, tree_tile->end.x, tree_tile->end.y }))
+						{
+							is_ok = false;
+							break;
+						}
+					}
+				}
+
+				if (is_ok)vTiles.push_back(tree_tile);
+			}
+			else if (type == 3)
+			{
+				float tx = RandIt(0.0f, scr_width - 200.0f);
+				float ty = RandIt(-scr_height / 3.0f, sky - 200.0f);
+
+				dll::GROUND* tree_tile{ dll::GROUND::create(tiles::tree3, tx, ty) };
+
+				bool is_ok = true;
+
+				if (!vTiles.empty())
+				{
+					for (int i = 0; i < vTiles.size(); ++i)
+					{
+						if (dll::Intersect(FRECT{ vTiles[i]->start.x,vTiles[i]->start.y, vTiles[i]->end.x,vTiles[i]->end.y },
+							FRECT{ tree_tile->start.x, tree_tile->start.y, tree_tile->end.x, tree_tile->end.y }))
+						{
+							is_ok = false;
+							break;
+						}
+					}
+				}
+
+				if (is_ok)vTiles.push_back(tree_tile);
+			}
+		}
+		if (!vTiles.empty())
+		{
+			for (std::vector<dll::GROUND*>::iterator tile = vTiles.begin(); tile < vTiles.end(); ++tile)
+			{
+				(*tile)->dir = assets_move_dir;
+
+				if (!(*tile)->move((float)(level)))
+				{
+					(*tile)->Release();
+					vTiles.erase(tile);
+					break;
+				}
+			}
+		}
+
 		if (Hero)
 		{
 			if (Hero->dir == dirs::left || Hero->dir == dirs::right)Hero->move((float)(level));
@@ -1294,6 +1424,36 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
 					|| (vFields[i]->end.y >= 0 && vFields[i]->end.y <= scr_height))
 					Draw->DrawBitmap(bmpField, D2D1::RectF(vFields[i]->start.x, vFields[i]->start.y,
 						vFields[i]->end.x, vFields[i]->end.y));
+
+		if (!vTiles.empty())
+			for (int i = 0; i < vTiles.size(); ++i)
+				if ((vTiles[i]->start.y >= sky && vTiles[i]->start.y <= scr_height)
+					|| (vTiles[i]->end.y >= sky && vTiles[i]->start.y <= scr_height))
+
+				{
+					switch (vTiles[i]->type)
+					{
+					case tiles::sea:
+						Draw->DrawBitmap(bmpSeaTile, D2D1::RectF(vTiles[i]->start.x, vTiles[i]->start.y,
+							vTiles[i]->end.x, vTiles[i]->end.y));
+						break;
+
+					case tiles::tree1:
+						Draw->DrawBitmap(bmpTree1Tile, D2D1::RectF(vTiles[i]->start.x, vTiles[i]->start.y,
+							vTiles[i]->end.x, vTiles[i]->end.y));
+						break;
+
+					case tiles::tree2:
+						Draw->DrawBitmap(bmpTree2Tile, D2D1::RectF(vTiles[i]->start.x, vTiles[i]->start.y,
+							vTiles[i]->end.x, vTiles[i]->end.y));
+						break;
+
+					case tiles::tree3:
+						Draw->DrawBitmap(bmpTree3Tile, D2D1::RectF(vTiles[i]->start.x, vTiles[i]->start.y,
+							vTiles[i]->end.x, vTiles[i]->end.y));
+						break;
+					}
+				}
 
 		if (nrmText && statBrush && txtBrush && hgltBrush && inactBrush && b1Bckg && b2Bckg && b3Bckg)
 		{

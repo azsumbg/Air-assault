@@ -1394,6 +1394,38 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
 			}
 		}
 
+		if (vClouds.size() < 4 + level && RandIt(0, 200) == 33)
+		{
+			vClouds.push_back(dll::CLOUDS::create(static_cast<clouds>(RandIt(0, 4)), RandIt(-200.0f, -190.0f + RandIt(0.0f, 100.0f)),
+				RandIt(sky, sky + 250.0f)));
+		}
+		if (!vClouds.empty())
+		{
+			for (std::vector<dll::CLOUDS*>::iterator cloud = vClouds.begin(); cloud < vClouds.end(); ++cloud)
+			{
+				if ((*cloud)->dir == dirs::right)
+				{
+					if (!(*cloud)->move(scr_width + scr_width / 3.0f, (*cloud)->end.y, (float)(level)))
+					{
+						(*cloud)->Release();
+						vClouds.erase(cloud);
+						break;
+					}
+					if ((*cloud)->start.x >= scr_width + scr_width / 3.0f)(*cloud)->dir = dirs::left;
+				}
+				else if ((*cloud)->dir == dirs::left)
+				{
+					if (!(*cloud)->move(- scr_width / 3.0f, (*cloud)->end.y, (float)(level)))
+					{
+						(*cloud)->Release();
+						vClouds.erase(cloud);
+						break;
+					}
+					if ((*cloud)->start.x <= - scr_width / 3.0f)(*cloud)->dir = dirs::right;
+				}
+			}
+		}
+
 		if (Hero)
 		{
 			if (Hero->dir == dirs::left || Hero->dir == dirs::right)Hero->move((float)(level));
@@ -1499,6 +1531,47 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
 		}
 
 		
+
+
+
+		if (!vClouds.empty())
+		{
+			for (int i = 0; i < vClouds.size(); ++i)
+			{
+				if (vClouds[i]->end.x >= 0 && vClouds[i]->start.x <= scr_width &&
+					vClouds[i]->end.y >= sky && vClouds[i]->start.y <= scr_height)
+				{
+					switch (vClouds[i]->type)
+					{
+					case clouds::cloud1:
+						Draw->DrawBitmap(bmpCloud1, D2D1::RectF(vClouds[i]->start.x, vClouds[i]->start.y,
+							vClouds[i]->end.x, vClouds[i]->end.y));
+						break;
+
+					case clouds::cloud2:
+						Draw->DrawBitmap(bmpCloud2, D2D1::RectF(vClouds[i]->start.x, vClouds[i]->start.y,
+							vClouds[i]->end.x, vClouds[i]->end.y));
+						break;
+
+					case clouds::cloud3:
+						Draw->DrawBitmap(bmpCloud3, D2D1::RectF(vClouds[i]->start.x, vClouds[i]->start.y,
+							vClouds[i]->end.x, vClouds[i]->end.y));
+						break;
+
+					case clouds::cloud4:
+						Draw->DrawBitmap(bmpCloud4, D2D1::RectF(vClouds[i]->start.x, vClouds[i]->start.y,
+							vClouds[i]->end.x, vClouds[i]->end.y));
+						break;
+
+					case clouds::cloud5:
+						Draw->DrawBitmap(bmpCloud5, D2D1::RectF(vClouds[i]->start.x, vClouds[i]->start.y,
+							vClouds[i]->end.x, vClouds[i]->end.y));
+						break;
+					}
+				}
+			}
+		}
+
 
 		///////////////////////////////////////////////////////////////
 		Draw->EndDraw();

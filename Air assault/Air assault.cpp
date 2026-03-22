@@ -172,7 +172,7 @@ dirs assets_move_dir{ dirs::stop };
 bool need_field_up = false;
 bool need_field_down = false;
 
-
+std::vector<dll::SHOTS*>vHeroShots;
 
 
 
@@ -320,6 +320,9 @@ void InitGame()
 
 	if (!vClouds.empty())for (int i = 0; i < vClouds.size(); ++i)if (!FreeMem(&vClouds[i]))LogErr(L"Error releasing vClouds !");
 	vClouds.clear();
+
+	if (!vHeroShots.empty())for (int i = 0; i < vHeroShots.size(); ++i)if (!FreeMem(&vHeroShots[i]))LogErr(L"Error releasing vHeroShots !");
+	vHeroShots.clear();
 
 	if (Hero)Hero->Release();
 	Hero = dll::HERO::create(scr_width / 2.0f - 50.0f, ground - 100.0f);
@@ -557,10 +560,140 @@ LRESULT CALLBACK WinProc(HWND hwnd, UINT ReceivedMsg, WPARAM wParam, LPARAM lPar
 				Hero->dir = dirs::down;
 				Hero->move((float)(level));
 				break;
+
+			case VK_SPACE:
+				if (Hero->get_current_ammo() == BULLET)
+				{
+					if (Hero->get_move_dir() == move_dirs::straight)
+					{
+						if (Hero->dir == dirs::up || Hero->dir == dirs::stop)
+							vHeroShots.push_back(dll::SHOTS::create(shots::bullet, Hero->center.x, Hero->center.y,
+								Hero->center.x, sky));
+						else if (Hero->dir == dirs::down)
+							vHeroShots.push_back(dll::SHOTS::create(shots::bullet, Hero->center.x, Hero->center.y,
+								Hero->center.x, ground));
+					}
+					else if (Hero->get_move_dir() == move_dirs::left)
+					{
+						if (assets_move_dir == dirs::up || assets_move_dir == dirs::stop)
+							vHeroShots.push_back(dll::SHOTS::create(shots::bullet, Hero->center.x, Hero->center.y,
+								0, ground));
+						else 
+							vHeroShots.push_back(dll::SHOTS::create(shots::bullet, Hero->center.x, Hero->center.y,
+								0, sky));
+					}
+					else if (Hero->get_move_dir() == move_dirs::right)
+					{
+						
+						if (assets_move_dir == dirs::up || assets_move_dir == dirs::stop)
+							vHeroShots.push_back(dll::SHOTS::create(shots::bullet, Hero->center.x, Hero->center.y,
+								scr_width, ground));
+						else 
+							vHeroShots.push_back(dll::SHOTS::create(shots::bullet, Hero->center.x, Hero->center.y,
+								scr_width, sky));
+					}
+
+					if (sound)mciSendStringW(L"play .\\res\\snd\\shoot.wav", NULL, NULL, NULL);
+				}
+				else if (Hero->get_current_ammo() == BIG_GUN)
+				{
+					if (Hero->get_move_dir() == move_dirs::straight)
+					{
+						if (Hero->dir == dirs::up || Hero->dir == dirs::stop)
+							vHeroShots.push_back(dll::SHOTS::create(shots::blast, Hero->center.x, Hero->center.y,
+								Hero->center.x, sky));
+						else if (Hero->dir == dirs::down)
+							vHeroShots.push_back(dll::SHOTS::create(shots::blast, Hero->center.x, Hero->center.y,
+								Hero->center.x, ground));
+					}
+					else if (Hero->get_move_dir() == move_dirs::left)
+					{
+						if (assets_move_dir == dirs::up || assets_move_dir == dirs::stop)
+							vHeroShots.push_back(dll::SHOTS::create(shots::blast, Hero->center.x, Hero->center.y,
+								0, ground));
+						else
+							vHeroShots.push_back(dll::SHOTS::create(shots::blast, Hero->center.x, Hero->center.y,
+								0, sky));
+					}
+					else if (Hero->get_move_dir() == move_dirs::right)
+					{
+
+						if (assets_move_dir == dirs::up || assets_move_dir == dirs::stop)
+							vHeroShots.push_back(dll::SHOTS::create(shots::blast, Hero->center.x, Hero->center.y,
+								scr_width, ground));
+						else
+							vHeroShots.push_back(dll::SHOTS::create(shots::blast, Hero->center.x, Hero->center.y,
+								scr_width, sky));
+					}
+
+					if (sound)mciSendStringW(L"play .\\res\\snd\\biggun.wav", NULL, NULL, NULL);
+				}
+				else if (Hero->get_current_ammo() == ROCKET)
+				{
+					if (Hero->get_move_dir() == move_dirs::straight)
+					{
+						if (Hero->dir == dirs::up || Hero->dir == dirs::stop)
+							vHeroShots.push_back(dll::SHOTS::create(shots::rocket, Hero->center.x, Hero->center.y,
+								Hero->center.x, sky));
+						else if (Hero->dir == dirs::down)
+							vHeroShots.push_back(dll::SHOTS::create(shots::rocket, Hero->center.x, Hero->center.y,
+								Hero->center.x, ground));
+					}
+					else if (Hero->get_move_dir() == move_dirs::left)
+					{
+						if (assets_move_dir == dirs::up || assets_move_dir == dirs::stop)
+							vHeroShots.push_back(dll::SHOTS::create(shots::rocket, Hero->center.x, Hero->center.y,
+								0, ground));
+						else
+							vHeroShots.push_back(dll::SHOTS::create(shots::rocket, Hero->center.x, Hero->center.y,
+								0, sky));
+					}
+					else if (Hero->get_move_dir() == move_dirs::right)
+					{
+
+						if (assets_move_dir == dirs::up || assets_move_dir == dirs::stop)
+							vHeroShots.push_back(dll::SHOTS::create(shots::rocket, Hero->center.x, Hero->center.y,
+								scr_width, ground));
+						else
+							vHeroShots.push_back(dll::SHOTS::create(shots::rocket, Hero->center.x, Hero->center.y,
+								scr_width, sky));
+					}
+
+					if (sound)mciSendStringW(L"play .\\res\\snd\\rocket.wav", NULL, NULL, NULL);
+				}
+				break;
 			}
 		}
 		break;
 
+	case WM_CHAR:
+		if (Hero)
+		{
+			switch (wParam)
+			{
+			case '1':
+				if (sound)mciSendString(L"play .\\res\\snd\\loadgun.wav", NULL, NULL, NULL);
+				Hero->set_current_ammo(BULLET);
+				break;
+
+			case '2':
+				if (!Hero->set_current_ammo(BIG_GUN))
+				{
+					if (sound)mciSendString(L"play .\\res\\snd\\negative.wav", NULL, NULL, NULL);
+				}
+				else if(sound)mciSendString(L"play .\\res\\snd\\loadgun.wav", NULL, NULL, NULL);
+				break;
+
+			case '3':
+				if (!Hero->set_current_ammo(ROCKET))
+				{
+					if (sound)mciSendString(L"play .\\res\\snd\\negative.wav", NULL, NULL, NULL);
+				}
+				else if (sound)mciSendString(L"play .\\res\\snd\\loadgun.wav", NULL, NULL, NULL);
+				break;
+			}
+		}
+		break;
 
 	default: return DefWindowProc(hwnd, ReceivedMsg, wParam, lParam);
 	}
@@ -1181,7 +1314,7 @@ void CreateResources()
 	}
 
 	mciSendString(L"play .\\res\\snd\\intro.wav", NULL, NULL, NULL);
-	for (int i = 0; i <= 120; ++i)
+	for (int i = 0; i <= 200; ++i)
 	{
 		Draw->BeginDraw();
 		Draw->DrawBitmap(bmpIntro[IntroFrame()], D2D1::RectF(0, 0, scr_width, scr_height));
@@ -1194,6 +1327,7 @@ void CreateResources()
 	Draw->EndDraw();
 
 	PlaySound(L".\\res\\snd\\boom.wav", NULL, SND_SYNC);
+	Sleep(1000);
 }
 
 
@@ -1442,7 +1576,18 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
 			if (Hero->dir == dirs::left || Hero->dir == dirs::right)Hero->move((float)(level));
 		}
 
-
+		if (!vHeroShots.empty())
+		{
+			for (std::vector<dll::SHOTS*>::iterator shot = vHeroShots.begin(); shot < vHeroShots.end(); ++shot)
+			{
+				if (!(*shot)->move((float)(level)))
+				{
+					(*shot)->Release();
+					vHeroShots.erase(shot);
+					break;
+				}
+			}
+		}
 
 
 
@@ -1544,7 +1689,33 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
 		
 
 
+		if (!vHeroShots.empty())
+		{
+			for (int i = 0; i < vHeroShots.size(); ++i)
+			{
+				switch (vHeroShots[i]->type)
+				{
+				case shots::bullet:
+					Draw->DrawBitmap(bmpShot, D2D1::RectF(vHeroShots[i]->start.x, vHeroShots[i]->start.y,
+						vHeroShots[i]->end.x, vHeroShots[i]->end.y));
+					break;
 
+				case shots::blast:
+					Draw->DrawBitmap(bmpBigGun, D2D1::RectF(vHeroShots[i]->start.x, vHeroShots[i]->start.y,
+						vHeroShots[i]->end.x, vHeroShots[i]->end.y));
+					break;
+
+				case shots::rocket:
+					if (vHeroShots[i]->dir == dirs::up)
+						Draw->DrawBitmap(bmpRocketU, D2D1::RectF(vHeroShots[i]->start.x, vHeroShots[i]->start.y,
+							vHeroShots[i]->end.x, vHeroShots[i]->end.y));
+					else Draw->DrawBitmap(bmpRocketD, D2D1::RectF(vHeroShots[i]->start.x, vHeroShots[i]->start.y,
+						vHeroShots[i]->end.x, vHeroShots[i]->end.y));
+					break;
+				}
+			}
+		}
+		
 		if (!vClouds.empty())
 		{
 			for (int i = 0; i < vClouds.size(); ++i)
@@ -1582,7 +1753,6 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
 				}
 			}
 		}
-
 
 		///////////////////////////////////////////////////////////////
 		Draw->EndDraw();

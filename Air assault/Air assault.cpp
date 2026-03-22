@@ -531,8 +531,33 @@ LRESULT CALLBACK WinProc(HWND hwnd, UINT ReceivedMsg, WPARAM wParam, LPARAM lPar
 		}
 		break;
 
+	case WM_KEYDOWN:
+		if (Hero)
+		{
+			switch (wParam)
+			{
+			case VK_LEFT:
+				Hero->dir = dirs::left;
+				Hero->move((float)(level));
+				break;
 
+			case VK_RIGHT:
+				Hero->dir = dirs::right;
+				Hero->move((float)(level));
+				break;
 
+			case VK_UP:
+				Hero->dir = dirs::up;
+				Hero->move((float)(level));
+				break;
+
+			case VK_DOWN:
+				Hero->dir = dirs::down;
+				Hero->move((float)(level));
+				break;
+			}
+		}
+		break;
 
 
 	default: return DefWindowProc(hwnd, ReceivedMsg, wParam, lParam);
@@ -1239,7 +1264,10 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
 				vFields.back()->end.y));
 		}
 
-
+		if (Hero)
+		{
+			if (Hero->dir == dirs::left || Hero->dir == dirs::right)Hero->move((float)(level));
+		}
 
 
 

@@ -1396,16 +1396,27 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
 
 		if (vClouds.size() < 4 + level && RandIt(0, 200) == 33)
 		{
-			vClouds.push_back(dll::CLOUDS::create(static_cast<clouds>(RandIt(0, 4)), RandIt(-200.0f, -190.0f + RandIt(0.0f, 100.0f)),
-				RandIt(sky, sky + 250.0f)));
+			if (RandIt(0, 2) == 1)vClouds.push_back(dll::CLOUDS::create(static_cast<clouds>(RandIt(0, 4)), RandIt(-200.0f, -190.0f + 
+				RandIt(0.0f, 100.0f)), RandIt(sky, ground - 250.0f)));
+			else
+			{
+				vClouds.push_back(dll::CLOUDS::create(static_cast<clouds>(RandIt(0, 4)), scr_width + 200.0f, 
+					RandIt(sky, ground - 250.0f)));
+				vClouds.back()->dir = dirs::left;
+			}
 		}
 		if (!vClouds.empty())
 		{
 			for (std::vector<dll::CLOUDS*>::iterator cloud = vClouds.begin(); cloud < vClouds.end(); ++cloud)
 			{
+				float ty = 0;
+
+				if (assets_move_dir == dirs::down)ty = ground;
+				else ty = sky;
+
 				if ((*cloud)->dir == dirs::right)
 				{
-					if (!(*cloud)->move(scr_width + scr_width / 3.0f, (*cloud)->end.y, (float)(level)))
+					if (!(*cloud)->move(scr_width + scr_width / 3.0f, ty, (float)(level)))
 					{
 						(*cloud)->Release();
 						vClouds.erase(cloud);
@@ -1415,7 +1426,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
 				}
 				else if ((*cloud)->dir == dirs::left)
 				{
-					if (!(*cloud)->move(- scr_width / 3.0f, (*cloud)->end.y, (float)(level)))
+					if (!(*cloud)->move(- scr_width / 3.0f, ty, (float)(level)))
 					{
 						(*cloud)->Release();
 						vClouds.erase(cloud);

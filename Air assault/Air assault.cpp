@@ -1768,56 +1768,71 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
 		{
 			for (int i = 0; i < vEvils.size(); ++i)
 			{
-				int frame = vEvils[i]->get_frame();
+				if ((vEvils[i]->start.y >= sky && vEvils[i]->start.y <= scr_height)
+					|| (vEvils[i]->end.y >= sky && vEvils[i]->start.y <= scr_height))
 
-				switch (vEvils[i]->type)
 				{
-				case creatures::evil1:
-					if (vEvils[i]->get_move_dir() == move_dirs::left)
-						Draw->DrawBitmap(bmpEvil1L[frame], Resizer(bmpEvil1L[frame], vEvils[i]->start.x, vEvils[i]->start.y));
-					else 
-						Draw->DrawBitmap(bmpEvil1R[frame], Resizer(bmpEvil1R[frame], vEvils[i]->start.x, vEvils[i]->start.y));
-					break;
+					int frame = vEvils[i]->get_frame();
 
-				case creatures::evil2:
-					if (vEvils[i]->get_move_dir() == move_dirs::left)
-						Draw->DrawBitmap(bmpEvil2L[frame], Resizer(bmpEvil2L[frame], vEvils[i]->start.x, vEvils[i]->start.y));
-					else
-						Draw->DrawBitmap(bmpEvil2R[frame], Resizer(bmpEvil2R[frame], vEvils[i]->start.x, vEvils[i]->start.y));
-					break;
+					switch (vEvils[i]->type)
+					{
+					case creatures::evil1:
+						if (vEvils[i]->get_move_dir() == move_dirs::left)
+							Draw->DrawBitmap(bmpEvil1L[frame], Resizer(bmpEvil1L[frame], vEvils[i]->start.x, vEvils[i]->start.y));
+						else if (vEvils[i]->get_move_dir() == move_dirs::right)
+							Draw->DrawBitmap(bmpEvil1R[frame], Resizer(bmpEvil1R[frame], vEvils[i]->start.x, vEvils[i]->start.y));
+						else
+							Draw->DrawBitmap(bmpEvil1S[frame], Resizer(bmpEvil1S[frame], vEvils[i]->start.x, vEvils[i]->start.y));
+						break;
 
-				case creatures::evil3:
-					if (vEvils[i]->get_move_dir() == move_dirs::left)
-						Draw->DrawBitmap(bmpEvil3L[frame], Resizer(bmpEvil3L[frame], vEvils[i]->start.x, vEvils[i]->start.y));
-					else
-						Draw->DrawBitmap(bmpEvil3R[frame], Resizer(bmpEvil3R[frame], vEvils[i]->start.x, vEvils[i]->start.y));
-					break;
+					case creatures::evil2:
+						if (vEvils[i]->get_move_dir() == move_dirs::left)
+							Draw->DrawBitmap(bmpEvil2L[frame], Resizer(bmpEvil2L[frame], vEvils[i]->start.x, vEvils[i]->start.y));
+						if (vEvils[i]->get_move_dir() == move_dirs::right)
+							Draw->DrawBitmap(bmpEvil2R[frame], Resizer(bmpEvil2R[frame], vEvils[i]->start.x, vEvils[i]->start.y));
+						else
+							Draw->DrawBitmap(bmpEvil2S[frame], Resizer(bmpEvil2S[frame], vEvils[i]->start.x, vEvils[i]->start.y));
+						break;
 
-				case creatures::evil4:
-					if (vEvils[i]->get_move_dir() == move_dirs::left)
-						Draw->DrawBitmap(bmpEvil4L[frame], Resizer(bmpEvil4L[frame], vEvils[i]->start.x, vEvils[i]->start.y));
-					else
-						Draw->DrawBitmap(bmpEvil4R[frame], Resizer(bmpEvil4R[frame], vEvils[i]->start.x, vEvils[i]->start.y));
-					break;
+					case creatures::evil3:
+						if (vEvils[i]->get_move_dir() == move_dirs::left)
+							Draw->DrawBitmap(bmpEvil3L[frame], Resizer(bmpEvil3L[frame], vEvils[i]->start.x, vEvils[i]->start.y));
+						else if (vEvils[i]->get_move_dir() == move_dirs::right)
+							Draw->DrawBitmap(bmpEvil3R[frame], Resizer(bmpEvil3R[frame], vEvils[i]->start.x, vEvils[i]->start.y));
+						else
+							Draw->DrawBitmap(bmpEvil3S[frame], Resizer(bmpEvil3S[frame], vEvils[i]->start.x, vEvils[i]->start.y));
+						break;
 
-				case creatures::evil5:
-					if (vEvils[i]->get_move_dir() == move_dirs::left)
-						Draw->DrawBitmap(bmpEvil5L[frame], Resizer(bmpEvil5L[frame], vEvils[i]->start.x, vEvils[i]->start.y));
-					else
-						Draw->DrawBitmap(bmpEvil5R[frame], Resizer(bmpEvil5R[frame], vEvils[i]->start.x, vEvils[i]->start.y));
-					break;
+					case creatures::evil4:
+						if (vEvils[i]->get_move_dir() == move_dirs::left)
+							Draw->DrawBitmap(bmpEvil4L[frame], Resizer(bmpEvil4L[frame], vEvils[i]->start.x, vEvils[i]->start.y));
+						else if (vEvils[i]->get_move_dir() == move_dirs::right)
+							Draw->DrawBitmap(bmpEvil4R[frame], Resizer(bmpEvil4R[frame], vEvils[i]->start.x, vEvils[i]->start.y));
+						else
+							Draw->DrawBitmap(bmpEvil4S[frame], Resizer(bmpEvil4S[frame], vEvils[i]->start.x, vEvils[i]->start.y));
+						break;
 
-				case creatures::boss1:
-					Draw->DrawBitmap(bmpBoss1[frame], Resizer(bmpBoss1[frame], vEvils[i]->start.x, vEvils[i]->start.y));
-					break;
+					case creatures::evil5:
+						if (vEvils[i]->get_move_dir() == move_dirs::left)
+							Draw->DrawBitmap(bmpEvil5L[frame], Resizer(bmpEvil5L[frame], vEvils[i]->start.x, vEvils[i]->start.y));
+						else if (vEvils[i]->get_move_dir() == move_dirs::right)
+							Draw->DrawBitmap(bmpEvil5R[frame], Resizer(bmpEvil5R[frame], vEvils[i]->start.x, vEvils[i]->start.y));
+						else
+							Draw->DrawBitmap(bmpEvil5S[frame], Resizer(bmpEvil5S[frame], vEvils[i]->start.x, vEvils[i]->start.y));
+						break;
 
-				case creatures::boss2:
-					Draw->DrawBitmap(bmpBoss2[frame], Resizer(bmpBoss2[frame], vEvils[i]->start.x, vEvils[i]->start.y));
-					break;
+					case creatures::boss1:
+						Draw->DrawBitmap(bmpBoss1[frame], Resizer(bmpBoss1[frame], vEvils[i]->start.x, vEvils[i]->start.y));
+						break;
 
-				case creatures::boss3:
-					Draw->DrawBitmap(bmpBoss3[frame], Resizer(bmpBoss3[frame], vEvils[i]->start.x, vEvils[i]->start.y));
-					break;
+					case creatures::boss2:
+						Draw->DrawBitmap(bmpBoss2[frame], Resizer(bmpBoss2[frame], vEvils[i]->start.x, vEvils[i]->start.y));
+						break;
+
+					case creatures::boss3:
+						Draw->DrawBitmap(bmpBoss3[frame], Resizer(bmpBoss3[frame], vEvils[i]->start.x, vEvils[i]->start.y));
+						break;
+					}
 				}
 			}
 		}

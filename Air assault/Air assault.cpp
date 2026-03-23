@@ -172,9 +172,13 @@ dirs assets_move_dir{ dirs::stop };
 bool need_field_up = false;
 bool need_field_down = false;
 
+bool boss_active = false;
+
+std::vector<dll::EVILS*>vEvils;
+
 std::vector<dll::SHOTS*>vHeroShots;
 
-
+std::vector<dll::SHOTS*>vEvilShots;
 
 /////////////////////////////////////////////////////
 
@@ -306,6 +310,7 @@ void InitGame()
 	secs = 300;
 
 	level_skipped = false;
+	boss_active = false;
 	assets_move_dir = dirs::stop;
 
 	need_field_up = false;
@@ -323,6 +328,12 @@ void InitGame()
 
 	if (!vHeroShots.empty())for (int i = 0; i < vHeroShots.size(); ++i)if (!FreeMem(&vHeroShots[i]))LogErr(L"Error releasing vHeroShots !");
 	vHeroShots.clear();
+
+	if (!vEvilShots.empty())for (int i = 0; i < vEvilShots.size(); ++i)if (!FreeMem(&vEvilShots[i]))LogErr(L"Error releasing vEvilShots !");
+	vEvilShots.clear();
+
+	if (!vEvils.empty())for (int i = 0; i < vEvils.size(); ++i)if (!FreeMem(&vEvils[i]))LogErr(L"Error releasing vEvils !");
+	vEvils.clear();
 
 	if (Hero)Hero->Release();
 	Hero = dll::HERO::create(scr_width / 2.0f - 50.0f, ground - 100.0f);
@@ -1571,6 +1582,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
 			}
 		}
 
+		////////////////////////////////////////////
+
 		if (Hero)
 		{
 			if (Hero->dir == dirs::left || Hero->dir == dirs::right)Hero->move((float)(level));
@@ -1589,9 +1602,74 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
 			}
 		}
 
+		////////////////////////////////////////////
 
+		if (vEvils.size() < 5 + level && RandIt(0, 333) == 66)
+		{
+			creatures temp_type(static_cast<creatures>(RandIt(0, 4)));
 
+			float tx = RandIt(0.0f, scr_width - 50.0f);
 
+			vEvils.push_back(dll::EVILS::create(temp_type, tx, 0));
+		}
+
+		if (!vEvils.empty() && Hero)
+		{
+			for (std::vector<dll::EVILS*>::iterator evil = vEvils.begin(); evil < vEvils.end(); ++evil)
+			{
+				dll::BAG<FPOINT> Others(vEvils.size());
+
+				dll::BAG<FPOINT> Bullets(vHeroShots.size());
+
+				if (!vEvils.empty())
+					for (size_t count = 0; count < Others.size(); ++count)
+						if ((*evil)->center.x != vEvils[count]->center.x
+							&& (*evil)->center.y != vEvils[count]->center.y)Others.push_back(vEvils[count]->center);
+
+				if (!vHeroShots.empty())
+					for (size_t count = 0; count < Bullets.size(); ++count)Bullets.push_back(vHeroShots[count]->center);
+
+				actions next_action = dll::AINextMove(*(*evil), Hero->center, Bullets, Others);
+
+				FPOINT current_target{ (*evil)->get_target_point() };
+				float target_x = current_target.x;
+				float target_y = current_target.y;
+				int shoot_damage = 0;
+
+				bool killed = false;
+
+				switch (next_action)
+				{
+				case actions::dir_changed:
+					if (!(*evil)->move(target_x, target_y, (float)(level)))
+					{
+						(*evil)->Release();
+						vEvils.erase(evil);
+						killed = true;
+						break;
+					}
+					break;
+
+				case actions::move:
+					if (!(*evil)->move(target_x, target_y, (float)(level)))
+					{
+						(*evil)->Release();
+						vEvils.erase(evil);
+						killed = true;
+						break;
+					}
+					break;
+
+				case actions::shoot:
+					shoot_damage = (*evil)->attack();
+					if (shoot_damage > 0)vEvilShots.push_back(dll::SHOTS::create(shots::bullet, (*evil)->center.x,
+						(*evil)->center.y, Hero->center.x, Hero->center.y));
+					break;
+				}
+
+				if (killed)break;
+			}
+		}
 
 
 
@@ -1686,8 +1764,63 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
 			else assets_move_dir = dirs::down;
 		}
 
-		
+		if (!vEvils.empty())
+		{
+			for (int i = 0; i < vEvils.size(); ++i)
+			{
+				int frame = vEvils[i]->get_frame();
 
+				switch (vEvils[i]->type)
+				{
+				case creatures::evil1:
+					if (vEvils[i]->get_move_dir() == move_dirs::left)
+						Draw->DrawBitmap(bmpEvil1L[frame], Resizer(bmpEvil1L[frame], vEvils[i]->start.x, vEvils[i]->start.y));
+					else 
+						Draw->DrawBitmap(bmpEvil1R[frame], Resizer(bmpEvil1R[frame], vEvils[i]->start.x, vEvils[i]->start.y));
+					break;
+
+				case creatures::evil2:
+					if (vEvils[i]->get_move_dir() == move_dirs::left)
+						Draw->DrawBitmap(bmpEvil2L[frame], Resizer(bmpEvil2L[frame], vEvils[i]->start.x, vEvils[i]->start.y));
+					else
+						Draw->DrawBitmap(bmpEvil2R[frame], Resizer(bmpEvil2R[frame], vEvils[i]->start.x, vEvils[i]->start.y));
+					break;
+
+				case creatures::evil3:
+					if (vEvils[i]->get_move_dir() == move_dirs::left)
+						Draw->DrawBitmap(bmpEvil3L[frame], Resizer(bmpEvil3L[frame], vEvils[i]->start.x, vEvils[i]->start.y));
+					else
+						Draw->DrawBitmap(bmpEvil3R[frame], Resizer(bmpEvil3R[frame], vEvils[i]->start.x, vEvils[i]->start.y));
+					break;
+
+				case creatures::evil4:
+					if (vEvils[i]->get_move_dir() == move_dirs::left)
+						Draw->DrawBitmap(bmpEvil4L[frame], Resizer(bmpEvil4L[frame], vEvils[i]->start.x, vEvils[i]->start.y));
+					else
+						Draw->DrawBitmap(bmpEvil4R[frame], Resizer(bmpEvil4R[frame], vEvils[i]->start.x, vEvils[i]->start.y));
+					break;
+
+				case creatures::evil5:
+					if (vEvils[i]->get_move_dir() == move_dirs::left)
+						Draw->DrawBitmap(bmpEvil5L[frame], Resizer(bmpEvil5L[frame], vEvils[i]->start.x, vEvils[i]->start.y));
+					else
+						Draw->DrawBitmap(bmpEvil5R[frame], Resizer(bmpEvil5R[frame], vEvils[i]->start.x, vEvils[i]->start.y));
+					break;
+
+				case creatures::boss1:
+					Draw->DrawBitmap(bmpBoss1[frame], Resizer(bmpBoss1[frame], vEvils[i]->start.x, vEvils[i]->start.y));
+					break;
+
+				case creatures::boss2:
+					Draw->DrawBitmap(bmpBoss2[frame], Resizer(bmpBoss2[frame], vEvils[i]->start.x, vEvils[i]->start.y));
+					break;
+
+				case creatures::boss3:
+					Draw->DrawBitmap(bmpBoss3[frame], Resizer(bmpBoss3[frame], vEvils[i]->start.x, vEvils[i]->start.y));
+					break;
+				}
+			}
+		}
 
 		if (!vHeroShots.empty())
 		{

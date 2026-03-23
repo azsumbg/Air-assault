@@ -1768,8 +1768,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
 		{
 			for (int i = 0; i < vEvils.size(); ++i)
 			{
-				if ((vEvils[i]->start.y >= sky && vEvils[i]->start.y <= scr_height)
-					|| (vEvils[i]->end.y >= sky && vEvils[i]->start.y <= scr_height))
+				if (vEvils[i]->end.y >= sky && vEvils[i]->start.y <= scr_height)
 
 				{
 					int frame = vEvils[i]->get_frame();

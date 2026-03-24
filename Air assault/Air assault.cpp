@@ -181,6 +181,17 @@ std::vector<dll::SHOTS*>vHeroShots;
 
 std::vector<dll::SHOTS*>vEvilShots;
 
+struct EXPLOSION
+{
+	float sx = 0;
+	float sy = 0;
+	
+	int frame = 0;
+	int frame_delay = 3;
+};
+
+std::vector<EXPLOSION> vExplosions;
+
 /////////////////////////////////////////////////////
 
 template<typename T>concept HasRelease = requires(T check)
@@ -317,7 +328,6 @@ void InitGame()
 	need_field_up = false;
 	need_field_down = false;
 
-
 	if (!vFields.empty())for (int i = 0; i < vFields.size(); ++i)if (!FreeMem(&vFields[i]))LogErr(L"Error releasing vFields !");
 	vFields.clear();
 
@@ -340,6 +350,8 @@ void InitGame()
 	Hero = dll::HERO::create(scr_width / 2.0f - 50.0f, ground - 100.0f);
 
 	if (Boss)Boss->Release();
+
+	vExplosions.clear();
 
 	for (float i = -scr_height; i < 2 * scr_height; i += scr_height)vFields.push_back(dll::GROUND::create(tiles::field, 0, i));
 
@@ -1692,8 +1704,40 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
 			}
 		}
 
+		////////////////////////////////////////////
 
+		if (!vHeroShots.empty() && !vEvils.empty())
+		{
+			bool killed = false;
 
+			for (std::vector<dll::EVILS*>::iterator evil = vEvils.begin(); evil < vEvils.end(); ++evil)
+			{
+				for (std::vector<dll::SHOTS*>::iterator shot = vHeroShots.begin(); shot < vHeroShots.end(); ++shot)
+				{
+					if (dll::Intersect(FPOINT((*shot)->center.x, (*shot)->center.y),
+						FPOINT((*evil)->center.x, (*evil)->center.y),
+						(*shot)->x_rad, (*evil)->x_rad, (*shot)->y_rad, (*evil)->y_rad))
+					{
+						(*evil)->lifes -= (*shot)->damage;
+						(*shot)->Release();
+						vHeroShots.erase(shot);
+						if ((*evil)->lifes <= 0)
+						{
+							if (sound)mciSendString(L"play .\\res\\snd\\boom.wav", NULL, NULL, NULL);
+							killed = true;
+							score += 5 + level;
+							vExplosions.push_back(EXPLOSION{ (*evil)->start.x,(*evil)->start.y });
+							(*evil)->Release();
+							vEvils.erase(evil);
+						}
+						break;
+					}
+				}
+
+				if (killed)break;
+			}
+		}
+		
 
 
 
@@ -1911,6 +1955,26 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
 			}
 		}
 
+		if (!vExplosions.empty())
+		{
+			for (int i = 0; i < vExplosions.size(); ++i)
+			{
+				vExplosions[i].frame_delay--;
+				if (vExplosions[i].frame_delay <= 0)
+				{
+					vExplosions[i].frame_delay = 3;
+					++vExplosions[i].frame;
+					if (vExplosions[i].frame <= 23)
+						Draw->DrawBitmap(bmpExplosion[vExplosions[i].frame], Resizer(bmpExplosion[vExplosions[i].frame],
+							vExplosions[i].sx, vExplosions[i].sy));
+					else
+					{
+						vExplosions.erase(vExplosions.begin() + i);
+						break;
+					}
+				}
+			}
+		}
 
 
 

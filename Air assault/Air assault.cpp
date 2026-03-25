@@ -1964,15 +1964,14 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
 				{
 					vExplosions[i].frame_delay = 3;
 					++vExplosions[i].frame;
-					if (vExplosions[i].frame <= 23)
-						Draw->DrawBitmap(bmpExplosion[vExplosions[i].frame], Resizer(bmpExplosion[vExplosions[i].frame],
-							vExplosions[i].sx, vExplosions[i].sy));
-					else
+					if (vExplosions[i].frame >= 23)
 					{
 						vExplosions.erase(vExplosions.begin() + i);
 						break;
 					}
 				}
+				Draw->DrawBitmap(bmpExplosion[vExplosions[i].frame], Resizer(bmpExplosion[vExplosions[i].frame],
+					vExplosions[i].sx, vExplosions[i].sy));
 			}
 		}
 

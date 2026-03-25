@@ -81,8 +81,7 @@ float y_scale{ 0 };
 
 int level = 1;
 int score = 0;
-int mins = 0;
-int secs = 0;
+int distance = 0;
 
 ///////////////////////////////////////////////////
 
@@ -318,8 +317,7 @@ void InitGame()
 {
 	wcscpy_s(current_player, L"TARLYO");
 	name_set = false;
-	mins = 0;
-	secs = 300;
+	distance = 400;
 
 	level_skipped = false;
 	boss_active = false;
@@ -391,7 +389,7 @@ LRESULT CALLBACK WinProc(HWND hwnd, UINT ReceivedMsg, WPARAM wParam, LPARAM lPar
 	case WM_CREATE:
 		if (bIns)
 		{
-			SetTimer(hwnd, bTimer, 1000, NULL);
+			SetTimer(hwnd, bTimer, 500, NULL);
 
 			bBar = CreateMenu();
 			bMain = CreateMenu();
@@ -522,8 +520,8 @@ LRESULT CALLBACK WinProc(HWND hwnd, UINT ReceivedMsg, WPARAM wParam, LPARAM lPar
 
 	case WM_TIMER:
 		if (pause)break;
-		--secs;
-		mins = secs / 60;
+		if (assets_move_dir == dirs::down)distance--;
+		else distance++;
 		break;
 
 	case WM_COMMAND:
@@ -2059,6 +2057,67 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
 					}
 				}
 			}
+		}
+
+		/////////////////////////////////////////////////////////////
+
+		//STATUS TEXT **********************************************
+
+		if (Hero)
+		{
+			wchar_t stat_txt[200]{ L"\0" };
+			wchar_t add[5]{ L"\0" };
+			int stat_size = 0;
+
+			swprintf_s(stat_txt, L"остават: %.3f км.", distance / 10.0f);
+
+			for (int i = 0; i < 200; ++i)
+			{
+				if (stat_txt[i] != '\0')++stat_size;
+				else break;
+			}
+
+			if (statBrush && midText)
+				Draw->DrawTextW(stat_txt, stat_size, midText, D2D1::RectF(scr_width - 350.0f, 60.0f, scr_width, scr_height), statBrush);
+
+			stat_size = 0;
+
+			wcscpy_s(stat_txt, current_player);
+
+			for (int i = 0; i < 200; ++i)
+			{
+				if (stat_txt[i] != '\0')++stat_size;
+				else break;
+			}
+
+			if (statBrush && midText)
+				Draw->DrawTextW(stat_txt, stat_size, midText, D2D1::RectF(50.0f, 60.0f, scr_width, scr_height), statBrush);
+
+			wcscpy_s(stat_txt, L"ниво: ");
+			wsprintf(add, L"%d", level);
+			wcscat_s(stat_txt, add);
+
+			wcscat_s(stat_txt, L", резултат: ");
+			wsprintf(add, L"%d", score);
+			wcscat_s(stat_txt, add);
+
+			wcscat_s(stat_txt, L", ракети: ");
+			wsprintf(add, L"%d", Hero->rockets_available);
+			wcscat_s(stat_txt, add);
+
+			wcscat_s(stat_txt, L", оръдие: ");
+			if(Hero->big_gun_found)wcscat_s(stat_txt, L" да !");
+			else wcscat_s(stat_txt, L" не !");
+
+			stat_size = 0;
+			for (int i = 0; i < 200; ++i)
+			{
+				if (stat_txt[i] != '\0')++stat_size;
+				else break;
+			}
+
+			if (statBrush && midText)
+				Draw->DrawTextW(stat_txt, stat_size, midText, D2D1::RectF(50.0f, ground, scr_width, scr_height), statBrush);
 		}
 
 		///////////////////////////////////////////////////////////////

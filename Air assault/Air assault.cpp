@@ -1738,9 +1738,49 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
 			}
 		}
 		
+		if (Hero && !vEvilShots.empty())
+		{
+			for (std::vector<dll::SHOTS*>::iterator shot = vEvilShots.begin(); shot < vEvilShots.end(); ++shot)
+			{
+				if (dll::Intersect(FPOINT(Hero->start.x, Hero->start.y), FPOINT((*shot)->start.x, (*shot)->start.y),
+					Hero->x_rad, (*shot)->x_rad, Hero->y_rad, (*shot)->y_rad))
+				{
+					Hero->lifes -= (*shot)->damage;
+					(*shot)->Release();
+					vEvilShots.erase(shot);
 
+					if (Hero->lifes <= 0)
+					{
+						vExplosions.push_back(EXPLOSION{ Hero->center.x,Hero->center.y });
+						Hero->Release();
+						Hero = nullptr;
+					}
 
+					break;
+				}
+			}
+		}
 
+		if (Hero && !vEvils.empty())
+		{
+			for (std::vector<dll::EVILS*>::iterator evil = vEvils.begin(); evil < vEvils.end(); ++evil)
+			{
+				if (dll::Intersect(FPOINT(Hero->center.x, Hero->center.y), FPOINT((*evil)->center.x, (*evil)->center.y),
+					Hero->x_rad, (*evil)->x_rad, Hero->y_rad, (*evil)->y_rad))
+				{
+					if (sound)mciSendString(L"play .\\res\\snd\\boom.wav", NULL, NULL, NULL);
+
+					vExplosions.push_back(EXPLOSION((*evil)->center.x, (*evil)->center.y));
+					vExplosions.push_back(EXPLOSION(Hero->center.x, Hero->center.y));
+					
+					(*evil)->Release();
+					vEvils.erase(evil);
+					Hero->Release();
+					Hero = nullptr;
+					break;
+				}
+			}
+		}
 
 
 		// DRAW THINGS ************************************************
@@ -1852,6 +1892,9 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
 						Draw->DrawBitmap(bmpBoss3[frame], Resizer(bmpBoss3[frame], vEvils[i]->start.x, vEvils[i]->start.y));
 						break;
 					}
+
+					Draw->DrawLine(D2D1::Point2F(vEvils[i]->start.x - 10.0f, vEvils[i]->end.y + 2.0f),
+						D2D1::Point2F(vEvils[i]->start.x + vEvils[i]->lifes / 1.5f, vEvils[i]->end.y + 2.0f), hgltBrush, 5.0f);
 				}
 			}
 		}
@@ -1898,6 +1941,9 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
 
 			if (Hero->dir == dirs::down)assets_move_dir = dirs::up;
 			else assets_move_dir = dirs::down;
+
+			Draw->DrawLine(D2D1::Point2F(Hero->start.x - 10.0f, Hero->end.y + 2.0f),
+				D2D1::Point2F(Hero->start.x + Hero->lifes / 2.0f, Hero->end.y + 2.0f), txtBrush, 5.0f);
 		}
 
 		if (!vHeroShots.empty())
@@ -2017,6 +2063,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
 
 		///////////////////////////////////////////////////////////////
 		Draw->EndDraw();
+
+		if (!Hero && vExplosions.empty())GameOver();
 	}
 
 	ClearResources();

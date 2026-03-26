@@ -352,7 +352,68 @@ void InitGame()
 	vExplosions.clear();
 
 	for (float i = -scr_height; i < 2 * scr_height; i += scr_height)vFields.push_back(dll::GROUND::create(tiles::field, 0, i));
+}
+void LevelUp()
+{
+	if (!level_skipped)
+	{
+		if (bigText && hgltBrush)
+		{
+			if (sound)mciSendString(L"play .\\res\\snd\\bonus.wav", NULL, NULL, NULL);
+			Draw->BeginDraw();
+			Draw->DrawBitmap(bmpIntro[IntroFrame()], D2D1::RectF(0, 0, scr_width, scr_height));
+			Draw->DrawTextW(L"БОНУС ПОСТИГНАТ !", 18, bigText, D2D1::RectF(100.0f, sky + 300.0f, scr_width, scr_height), hgltBrush);
+			Draw->EndDraw();
+			Sleep(3000);
+		}
+	}
 
+	if (bigText && hgltBrush)
+	{
+		if (sound)mciSendString(L"play .\\res\\snd\\levelup.wav", NULL, NULL, NULL);
+		Draw->BeginDraw();
+		Draw->DrawBitmap(bmpIntro[IntroFrame()], D2D1::RectF(0, 0, scr_width, scr_height));
+		Draw->DrawTextW(L"СЛЕДВАЩО НИВО !", 16, bigText, D2D1::RectF(100.0f, sky + 300.0f, scr_width, scr_height), hgltBrush);
+		Draw->EndDraw();
+		Sleep(3000);
+	}
+
+	level_skipped = false;
+	boss_active = false;
+	assets_move_dir = dirs::stop;
+
+	++level;
+	distance = 400 + level * 10;
+
+	need_field_up = false;
+	need_field_down = false;
+
+	if (!vFields.empty())for (int i = 0; i < vFields.size(); ++i)if (!FreeMem(&vFields[i]))LogErr(L"Error releasing vFields !");
+	vFields.clear();
+
+	if (!vTiles.empty())for (int i = 0; i < vTiles.size(); ++i)if (!FreeMem(&vTiles[i]))LogErr(L"Error releasing vTiles !");
+	vTiles.clear();
+
+	if (!vClouds.empty())for (int i = 0; i < vClouds.size(); ++i)if (!FreeMem(&vClouds[i]))LogErr(L"Error releasing vClouds !");
+	vClouds.clear();
+
+	if (!vHeroShots.empty())for (int i = 0; i < vHeroShots.size(); ++i)if (!FreeMem(&vHeroShots[i]))LogErr(L"Error releasing vHeroShots !");
+	vHeroShots.clear();
+
+	if (!vEvilShots.empty())for (int i = 0; i < vEvilShots.size(); ++i)if (!FreeMem(&vEvilShots[i]))LogErr(L"Error releasing vEvilShots !");
+	vEvilShots.clear();
+
+	if (!vEvils.empty())for (int i = 0; i < vEvils.size(); ++i)if (!FreeMem(&vEvils[i]))LogErr(L"Error releasing vEvils !");
+	vEvils.clear();
+
+	if (Hero)Hero->Release();
+	Hero = dll::HERO::create(scr_width / 2.0f - 50.0f, ground - 100.0f);
+
+	if (Boss)Boss->Release();
+
+	vExplosions.clear();
+
+	for (float i = -scr_height; i < 2 * scr_height; i += scr_height)vFields.push_back(dll::GROUND::create(tiles::field, 0, i));
 }
 
 INT_PTR CALLBACK DlgProc(HWND hwnd, UINT ReceivedMsg, WPARAM wParam, LPARAM lParam)
@@ -1798,7 +1859,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
 
 			actions next_action = dll::AINextMove(*Boss, Hero->center, shots, others);
 
-			if (Boss->end.x >= scr_height - 200.0f)
+			if (Boss->end.x >= scr_height - 100.0f)
 			{
 				if (Boss->center.x <= scr_width / 2.0f)Boss->set_path(scr_width, sky);
 				else Boss->set_path(0, sky);
@@ -1854,6 +1915,43 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
 			}
 		}
 
+		if (Boss && Hero)
+		{
+			if (dll::Intersect(FPOINT(Boss->center.x, Boss->center.y), FPOINT(Hero->center.x, Hero->center.y),
+				Boss->x_rad, Hero->x_rad, Boss->y_rad, Hero->y_rad))
+			{
+				if (sound)mciSendString(L"play .\\res\\snd\\boom.wav", NULL, NULL, NULL);
+
+				vExplosions.push_back(EXPLOSION(Boss->center.x, Boss->center.y));
+				vExplosions.push_back(EXPLOSION(Hero->center.x, Hero->center.y));
+
+				Boss->Release();
+				Boss = nullptr;
+				Hero->Release();
+				Hero = nullptr;
+			}
+		}
+
+		if (Boss && !vHeroShots.empty())
+		{
+			for (std::vector<dll::SHOTS*>::iterator shot = vHeroShots.begin(); shot < vHeroShots.end(); ++shot)
+			{
+				if (dll::Intersect(FPOINT(Boss->center.x, Boss->center.y), FPOINT((*shot)->center.x, (*shot)->center.y),
+					Boss->x_rad, (*shot)->x_rad, Boss->y_rad, (*shot)->y_rad))
+				{
+					Boss->lifes -= (*shot)->damage;
+					(*shot)->Release();
+					vHeroShots.erase(shot);
+
+					if (Boss->lifes <= 0)
+					{
+						Boss->Release();
+						Boss = nullptr;
+					}
+					break;
+				}
+			}
+		}
 
 		// DRAW THINGS ************************************************
 
@@ -1979,10 +2077,12 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
 					Draw->DrawBitmap(bmpBoss3[frame], Resizer(bmpBoss3[frame], Boss->start.x, Boss->start.y));
 					break;
 				}
+
+				Draw->DrawLine(D2D1::Point2F(Boss->start.x, Boss->end.y + 5.0f), D2D1::Point2F(Boss->start.x + Boss->lifes / 2.0f, 
+					Boss->end.y + 5.0f), hgltBrush, 5.0f);
 			}
 		}
 
-		
 		if (nrmText && statBrush && txtBrush && hgltBrush && inactBrush && b1Bckg && b2Bckg && b3Bckg)
 		{
 			Draw->FillRectangle(D2D1::RectF(0, 0, scr_width, 50.0f), statBrush);
@@ -2104,8 +2204,6 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
 			}
 		}
 
-
-
 		if (!vClouds.empty())
 		{
 			for (int i = 0; i < vClouds.size(); ++i)
@@ -2209,6 +2307,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
 		Draw->EndDraw();
 
 		if (!Hero && vExplosions.empty())GameOver();
+		if (boss_active && !Boss && vExplosions.empty())LevelUp();
 	}
 
 	ClearResources();

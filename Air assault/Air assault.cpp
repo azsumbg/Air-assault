@@ -519,9 +519,14 @@ LRESULT CALLBACK WinProc(HWND hwnd, UINT ReceivedMsg, WPARAM wParam, LPARAM lPar
 		break;
 
 	case WM_TIMER:
-		if (pause)break;
+		if (pause || boss_active)break;
 		if (assets_move_dir == dirs::down)distance--;
 		else distance++;
+		if (distance <= 0)
+		{
+			boss_active = true;
+			Boss = dll::EVILS::create(static_cast<creatures>(RandIt(5, 7)), RandIt(0.0f, scr_width - 200.0f), sky - 100.0f);
+		}
 		break;
 
 	case WM_COMMAND:
@@ -1617,7 +1622,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
 
 		////////////////////////////////////////////
 
-		if (vEvils.size() < 5 + level && RandIt(0, 333) == 66)
+		if (vEvils.size() < 8 + level && RandIt(0, 111) == 66)
 		{
 			creatures temp_type(static_cast<creatures>(RandIt(0, 4)));
 
@@ -1780,6 +1785,75 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
 			}
 		}
 
+		if (Boss && Hero)
+		{
+			dll::BAG<FPOINT>others;
+			dll::BAG<FPOINT>shots;
+
+			if (!vEvils.empty())
+				for (int i = 0; i < vEvils.size(); ++i)others.push_back(vEvils[i]->center);
+
+			if (!vHeroShots.empty())
+				for (int i = 0; i < vHeroShots.size(); ++i)shots.push_back(vHeroShots[i]->center);
+
+			actions next_action = dll::AINextMove(*Boss, Hero->center, shots, others);
+
+			if (Boss->end.x >= scr_height - 200.0f)
+			{
+				if (Boss->center.x <= scr_width / 2.0f)Boss->set_path(scr_width, sky);
+				else Boss->set_path(0, sky);
+			}
+
+			FPOINT BossTarget{ Boss->get_target_point() };
+
+			float boss_ex = BossTarget.x;
+			float boss_ey = BossTarget.y;
+			int damage = 0;
+
+			switch (next_action)
+			{
+			case actions::move:
+				Boss->move(boss_ex, boss_ey, (float)(level));
+				break;
+
+			case actions::dir_changed:
+				Boss->move(boss_ex, boss_ey, (float)(level));
+				break;
+
+			case actions::shoot:
+				damage = Boss->attack();
+				if (damage > 0)
+				{
+					switch (RandIt(0, 7))
+					{
+					case 7:
+						vEvilShots.push_back(dll::SHOTS::create(shots::rocket, Boss->center.x, Boss->center.y,
+							Hero->center.x, Hero->center.y));
+						break;
+
+					case 6:
+						vEvilShots.push_back(dll::SHOTS::create(shots::blast, Boss->center.x, Boss->center.y,
+							Hero->center.x, Hero->center.y));
+						vEvilShots.back()->damage -= 10;
+						break;
+
+					case 4:
+						vEvilShots.push_back(dll::SHOTS::create(shots::blast, Boss->center.x, Boss->center.y,
+							Hero->center.x, Hero->center.y));
+						vEvilShots.back()->damage -= 10;
+						break;
+
+					default:
+						vEvilShots.push_back(dll::SHOTS::create(shots::bullet, Boss->center.x, Boss->center.y,
+							Hero->center.x, Hero->center.y));
+						vEvilShots.back()->damage -= 15;
+						break;
+					}
+				}
+				break;
+			}
+		}
+
 
 		// DRAW THINGS ************************************************
 
@@ -1877,26 +1951,37 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
 						else
 							Draw->DrawBitmap(bmpEvil5S[frame], Resizer(bmpEvil5S[frame], vEvils[i]->start.x, vEvils[i]->start.y));
 						break;
-
-					case creatures::boss1:
-						Draw->DrawBitmap(bmpBoss1[frame], Resizer(bmpBoss1[frame], vEvils[i]->start.x, vEvils[i]->start.y));
-						break;
-
-					case creatures::boss2:
-						Draw->DrawBitmap(bmpBoss2[frame], Resizer(bmpBoss2[frame], vEvils[i]->start.x, vEvils[i]->start.y));
-						break;
-
-					case creatures::boss3:
-						Draw->DrawBitmap(bmpBoss3[frame], Resizer(bmpBoss3[frame], vEvils[i]->start.x, vEvils[i]->start.y));
-						break;
 					}
 
-					Draw->DrawLine(D2D1::Point2F(vEvils[i]->start.x - 10.0f, vEvils[i]->end.y + 2.0f),
+					Draw->DrawLine(D2D1::Point2F(vEvils[i]->start.x, vEvils[i]->end.y + 2.0f),
 						D2D1::Point2F(vEvils[i]->start.x + vEvils[i]->lifes / 1.5f, vEvils[i]->end.y + 2.0f), hgltBrush, 5.0f);
 				}
 			}
 		}
 		
+		if (Boss)
+		{
+			if (Boss->end.y >= sky && Boss->start.y <= scr_height)
+			{
+				int frame = Boss->get_frame();
+				switch (Boss->type)
+				{
+
+				case creatures::boss1:
+					Draw->DrawBitmap(bmpBoss1[frame], Resizer(bmpBoss1[frame], Boss->start.x, Boss->start.y));
+					break;
+
+				case creatures::boss2:
+					Draw->DrawBitmap(bmpBoss2[frame], Resizer(bmpBoss2[frame], Boss->start.x, Boss->start.y));
+					break;
+
+				case creatures::boss3:
+					Draw->DrawBitmap(bmpBoss3[frame], Resizer(bmpBoss3[frame], Boss->start.x, Boss->start.y));
+					break;
+				}
+			}
+		}
+
 		
 		if (nrmText && statBrush && txtBrush && hgltBrush && inactBrush && b1Bckg && b2Bckg && b3Bckg)
 		{

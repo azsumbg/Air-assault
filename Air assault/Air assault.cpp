@@ -317,7 +317,7 @@ void InitGame()
 {
 	wcscpy_s(current_player, L"TARLYO");
 	name_set = false;
-	distance = 400;
+	distance = 40;
 
 	level_skipped = false;
 	boss_active = false;
@@ -364,8 +364,10 @@ void LevelUp()
 			Draw->DrawBitmap(bmpIntro[IntroFrame()], D2D1::RectF(0, 0, scr_width, scr_height));
 			Draw->DrawTextW(L"БОНУС ПОСТИГНАТ !", 18, bigText, D2D1::RectF(100.0f, sky + 300.0f, scr_width, scr_height), hgltBrush);
 			Draw->EndDraw();
-			Sleep(3000);
+			Sleep(3500);
 		}
+
+		score += 50 + level * 10;
 	}
 
 	if (bigText && hgltBrush)
@@ -1859,9 +1861,9 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
 
 			actions next_action = dll::AINextMove(*Boss, Hero->center, shots, others);
 
-			if (Boss->end.x >= scr_height - 100.0f)
+			if (Boss->end.y >= scr_height - 100.0f)
 			{
-				if (Boss->center.x <= scr_width / 2.0f)Boss->set_path(scr_width, sky);
+				if (Boss->end.x <= scr_width / 2.0f)Boss->set_path(scr_width, sky);
 				else Boss->set_path(0, sky);
 			}
 
@@ -2307,7 +2309,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
 		Draw->EndDraw();
 
 		if (!Hero && vExplosions.empty())GameOver();
-		if (boss_active && !Boss && vExplosions.empty())LevelUp();
+		else if (boss_active && !Boss && vExplosions.empty())LevelUp();
 	}
 
 	ClearResources();

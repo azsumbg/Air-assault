@@ -302,7 +302,39 @@ int IntroFrame()
 	if (frame > 71)frame = 0;
 	return frame;
 }
+BOOL CheckRecord()
+{
+	if (score < 1)return no_record;
 
+	int result = 0;
+	CheckFile(record_file, &result);
+
+	if (result == FILE_NOT_EXIST)
+	{
+		std::wofstream rec(record_file);
+		rec << score << std::endl;
+		for (int i = 0; i < 16; ++i)rec << static_cast<int>(current_player[i]) << std::endl;
+		rec.close();
+		return first_record;
+	}
+	else
+	{
+		std::wifstream check(record_file);
+		check >> result;
+		check.close();
+	}
+
+	if (score > result)
+	{
+		std::wofstream rec(record_file);
+		rec << score << std::endl;
+		for (int i = 0; i < 16; ++i)rec << static_cast<int>(current_player[i]) << std::endl;
+		rec.close();
+		return record;
+	}
+
+	return no_record;
+}
 void GameOver()
 {
 	PlaySound(NULL, NULL, NULL);

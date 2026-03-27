@@ -439,15 +439,24 @@ INT_PTR CALLBACK DlgProc(HWND hwnd, UINT ReceivedMsg, WPARAM wParam, LPARAM lPar
 		break;
 
 	case WM_COMMAND:
-		if (GetDlgItemText(hwnd, IDC_NAME, current_player, 16) < 1)
+		switch (LOWORD(wParam))
 		{
-			if (sound)mciSendString(L"play .\\res\\snd\\exclamation.wav", NULL, NULL, NULL);
-			wcscpy_s(current_player, L"TARLYO");
-			MessageBox(bHwnd, L"Ха, ха, ха ! Забрави си името !", L"Забраватор !", MB_OK | MB_APPLMODAL | MB_ICONEXCLAMATION);
+		case IDCANCEL:
 			EndDialog(hwnd, IDCANCEL);
 			break;
+
+		case IDOK:
+			if (GetDlgItemText(hwnd, IDC_NAME, current_player, 16) < 1)
+			{
+				if (sound)mciSendString(L"play .\\res\\snd\\exclamation.wav", NULL, NULL, NULL);
+				wcscpy_s(current_player, L"TARLYO");
+				MessageBox(bHwnd, L"Ха, ха, ха ! Забрави си името !", L"Забраватор !", MB_OK | MB_APPLMODAL | MB_ICONEXCLAMATION);
+				EndDialog(hwnd, IDCANCEL);
+				break;
+			}
+			EndDialog(hwnd, IDOK);
+			break;
 		}
-		EndDialog(hwnd, IDOK);
 		break;
 	}
 
@@ -597,6 +606,55 @@ LRESULT CALLBACK WinProc(HWND hwnd, UINT ReceivedMsg, WPARAM wParam, LPARAM lPar
 		{
 			boss_active = true;
 			Boss = dll::EVILS::create(static_cast<creatures>(RandIt(5, 7)), RandIt(0.0f, scr_width - 200.0f), sky - 100.0f);
+			if (sound)mciSendString(L"play .\\res\\snd\\champion.wav", NULL, NULL, NULL);
+		}
+		break;
+
+	case WM_LBUTTONDOWN:
+		if (HIWORD(lParam) * y_scale <= 50)
+		{
+			if (LOWORD(lParam) * x_scale >= b1Rect.left && LOWORD(lParam) * x_scale <= b1Rect.right)
+			{
+				if (name_set)
+				{
+					if (sound)mciSendString(L"play .\\res\\snd\\negative.wav", NULL, NULL, NULL);
+					break;
+				}
+
+				if (sound)mciSendString(L"play .\\res\\snd\\select.wav", NULL, NULL, NULL);
+				if (DialogBox(bIns, MAKEINTRESOURCE(IDD_PLAYER), hwnd, &DlgProc) == IDOK)name_set = true;
+			}
+			if (LOWORD(lParam) * x_scale >= b2Rect.left && LOWORD(lParam) * x_scale <= b2Rect.right)
+			{
+				mciSendString(L"play .\\res\\snd\\select.wav", NULL, NULL, NULL);
+				if (sound)
+				{
+					sound = false;
+					PlaySound(NULL, NULL, NULL);
+					break;
+				}
+				else
+				{
+					sound = true;
+					PlaySound(sound_file, NULL, SND_ASYNC | SND_LOOP);
+					break;
+				}
+			}
+		}
+		else
+		{
+			if (sound)mciSendString(L"play .\\res\\snd\\select.wav", NULL, NULL, NULL);
+
+			if (!pause)
+			{
+				pause = true;
+				break;
+			}
+			else
+			{
+				pause = false;
+				break;
+			}
 		}
 		break;
 
@@ -1709,7 +1767,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
 
 		////////////////////////////////////////////
 
-		if (vEvils.size() < 8 + level && RandIt(0, 100) == 66)
+		if (vEvils.size() < 6 + level && RandIt(0, 100) == 66)
 		{
 			creatures temp_type(static_cast<creatures>(RandIt(0, 4)));
 
@@ -1843,7 +1901,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
 				if (dll::Intersect(FPOINT(Hero->start.x, Hero->start.y), FPOINT((*shot)->start.x, (*shot)->start.y),
 					Hero->x_rad, (*shot)->x_rad, Hero->y_rad, (*shot)->y_rad))
 				{
-					Hero->lifes -= (*shot)->damage;
+					Hero->lifes -= ((*shot)->damage - Hero->armour);
 					(*shot)->Release();
 					vEvilShots.erase(shot);
 

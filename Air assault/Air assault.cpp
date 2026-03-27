@@ -180,6 +180,8 @@ std::vector<dll::SHOTS*>vHeroShots;
 
 std::vector<dll::SHOTS*>vEvilShots;
 
+std::vector<dll::POWERUPS*>vPowerUps;
+
 struct EXPLOSION
 {
 	float sx = 0;
@@ -317,7 +319,7 @@ void InitGame()
 {
 	wcscpy_s(current_player, L"TARLYO");
 	name_set = false;
-	distance = 40;
+	distance = 400;
 
 	level_skipped = false;
 	boss_active = false;
@@ -343,6 +345,9 @@ void InitGame()
 
 	if (!vEvils.empty())for (int i = 0; i < vEvils.size(); ++i)if (!FreeMem(&vEvils[i]))LogErr(L"Error releasing vEvils !");
 	vEvils.clear();
+
+	if (!vPowerUps.empty())for (int i = 0; i < vPowerUps.size(); ++i)if (!FreeMem(&vPowerUps[i]))LogErr(L"Error releasing vPowerUps !");
+	vPowerUps.clear();
 
 	if (Hero)Hero->Release();
 	Hero = dll::HERO::create(scr_width / 2.0f - 50.0f, ground - 100.0f);
@@ -407,6 +412,9 @@ void LevelUp()
 
 	if (!vEvils.empty())for (int i = 0; i < vEvils.size(); ++i)if (!FreeMem(&vEvils[i]))LogErr(L"Error releasing vEvils !");
 	vEvils.clear();
+
+	if (!vPowerUps.empty())for (int i = 0; i < vPowerUps.size(); ++i)if (!FreeMem(&vPowerUps[i]))LogErr(L"Error releasing vPowerUps !");
+	vPowerUps.clear();
 
 	if (Hero)Hero->Release();
 	Hero = dll::HERO::create(scr_width / 2.0f - 50.0f, ground - 100.0f);
@@ -722,36 +730,52 @@ LRESULT CALLBACK WinProc(HWND hwnd, UINT ReceivedMsg, WPARAM wParam, LPARAM lPar
 				}
 				else if (Hero->get_current_ammo() == ROCKET)
 				{
-					if (Hero->get_move_dir() == move_dirs::straight)
+					if (Hero->rockets_available > 0)
 					{
-						if (Hero->dir == dirs::up || Hero->dir == dirs::stop)
-							vHeroShots.push_back(dll::SHOTS::create(shots::rocket, Hero->center.x, Hero->center.y,
-								Hero->center.x, sky));
-						else if (Hero->dir == dirs::down)
-							vHeroShots.push_back(dll::SHOTS::create(shots::rocket, Hero->center.x, Hero->center.y,
-								Hero->center.x, ground));
-					}
-					else if (Hero->get_move_dir() == move_dirs::left)
-					{
-						if (assets_move_dir == dirs::up || assets_move_dir == dirs::stop)
-							vHeroShots.push_back(dll::SHOTS::create(shots::rocket, Hero->center.x, Hero->center.y,
-								0, ground));
-						else
-							vHeroShots.push_back(dll::SHOTS::create(shots::rocket, Hero->center.x, Hero->center.y,
-								0, sky));
-					}
-					else if (Hero->get_move_dir() == move_dirs::right)
-					{
+						if (Hero->get_move_dir() == move_dirs::straight)
+						{
+							if (Hero->dir == dirs::up || Hero->dir == dirs::stop)
+								vHeroShots.push_back(dll::SHOTS::create(shots::rocket, Hero->center.x, Hero->center.y,
+									Hero->center.x, sky));
+							else if (Hero->dir == dirs::down)
+								vHeroShots.push_back(dll::SHOTS::create(shots::rocket, Hero->center.x, Hero->center.y,
+									Hero->center.x, ground));
+						}
+						else if (Hero->get_move_dir() == move_dirs::left)
+						{
+							if (assets_move_dir == dirs::up || assets_move_dir == dirs::stop)
+								vHeroShots.push_back(dll::SHOTS::create(shots::rocket, Hero->center.x, Hero->center.y,
+									0, ground));
+							else
+								vHeroShots.push_back(dll::SHOTS::create(shots::rocket, Hero->center.x, Hero->center.y,
+									0, sky));
+						}
+						else if (Hero->get_move_dir() == move_dirs::right)
+						{
 
-						if (assets_move_dir == dirs::up || assets_move_dir == dirs::stop)
-							vHeroShots.push_back(dll::SHOTS::create(shots::rocket, Hero->center.x, Hero->center.y,
-								scr_width, ground));
-						else
-							vHeroShots.push_back(dll::SHOTS::create(shots::rocket, Hero->center.x, Hero->center.y,
-								scr_width, sky));
-					}
+							if (assets_move_dir == dirs::up || assets_move_dir == dirs::stop)
+								vHeroShots.push_back(dll::SHOTS::create(shots::rocket, Hero->center.x, Hero->center.y,
+									scr_width, ground));
+							else
+								vHeroShots.push_back(dll::SHOTS::create(shots::rocket, Hero->center.x, Hero->center.y,
+									scr_width, sky));
+						}
 
-					if (sound)mciSendStringW(L"play .\\res\\snd\\rocket.wav", NULL, NULL, NULL);
+						Hero->rockets_available--;
+
+						if (sound)mciSendStringW(L"play .\\res\\snd\\rocket.wav", NULL, NULL, NULL);
+					
+						if (Hero->rockets_available <= 0)
+						{
+							if (Hero->big_gun_found)Hero->set_current_ammo(BIG_GUN);
+							else Hero->set_current_ammo(BULLET);
+						}
+					}
+					else
+					{
+						if (Hero->big_gun_found)Hero->set_current_ammo(BIG_GUN);
+						else Hero->set_current_ammo(BULLET);
+					}
 				}
 				break;
 			}
@@ -1685,7 +1709,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
 
 		////////////////////////////////////////////
 
-		if (vEvils.size() < 8 + level && RandIt(0, 111) == 66)
+		if (vEvils.size() < 8 + level && RandIt(0, 100) == 66)
 		{
 			creatures temp_type(static_cast<creatures>(RandIt(0, 4)));
 
@@ -1793,6 +1817,14 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
 							killed = true;
 							score += 5 + level;
 							vExplosions.push_back(EXPLOSION{ (*evil)->start.x,(*evil)->start.y });
+							
+							if (RandIt(0, 3) == 2)
+							{
+								powerups ttype = static_cast<powerups>(RandIt(0, 3));
+								vPowerUps.push_back(dll::POWERUPS::create(ttype, (*evil)->center.x, (*evil)->center.y));
+								if (sound)mciSendString(L"play .\\res\\snd\\powerup.wav", NULL, NULL, NULL);
+							}
+							
 							(*evil)->Release();
 							vEvils.erase(evil);
 						}
@@ -1952,6 +1984,45 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
 					}
 					break;
 				}
+			}
+		}
+
+		if (Hero && !vPowerUps.empty())
+		{
+			for (std::vector<dll::POWERUPS*>::iterator power = vPowerUps.begin(); power < vPowerUps.end(); ++power)
+			{
+				if (dll::Intersect(FRECT{ Hero->start.x, Hero->start.y, Hero->end.x, Hero->end.y },
+					FRECT{ (*power)->start.x, (*power)->start.y, (*power)->end.x, (*power)->end.y }))
+				{
+					switch ((*power)->type)
+					{
+					case powerups::big_gun:
+						Hero->big_gun_found = true;
+						if (sound)mciSendString(L"play .\\res\\snd\\load.wav", NULL, NULL, NULL);
+						break;
+
+					case powerups::rocket:
+						Hero->rockets_available++;
+						if (sound)mciSendString(L"play .\\res\\snd\\rocket.wav", NULL, NULL, NULL);
+						break;
+
+					case powerups::repair:
+						if (sound)mciSendString(L"play .\\res\\snd\\heal.wav", NULL, NULL, NULL);
+						if (Hero->lifes + 50 <= 150)Hero->lifes += 50;
+						else Hero->lifes = 150;
+						break;
+
+					case powerups::shield:
+						if (sound)mciSendString(L"play .\\res\\snd\\heal.wav", NULL, NULL, NULL);
+						Hero->armour++;
+						break;
+					}
+
+					(*power)->Release();
+					vPowerUps.erase(power);
+					break;
+				}
+						
 			}
 		}
 
@@ -2244,6 +2315,35 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
 			}
 		}
 
+		if (!vPowerUps.empty())
+		{
+			for (int i = 0; i < vPowerUps.size(); ++i)
+			{
+				switch (vPowerUps[i]->type)
+				{
+				case powerups::big_gun:
+					Draw->DrawBitmap(bmpBigGun, D2D1::RectF(vPowerUps[i]->start.x, vPowerUps[i]->start.y,
+						vPowerUps[i]->end.x, vPowerUps[i]->end.y));
+					break;
+
+				case powerups::rocket:
+					Draw->DrawBitmap(bmpRocket, D2D1::RectF(vPowerUps[i]->start.x, vPowerUps[i]->start.y,
+						vPowerUps[i]->end.x, vPowerUps[i]->end.y));
+					break;
+
+				case powerups::repair:
+					Draw->DrawBitmap(bmpRepair, D2D1::RectF(vPowerUps[i]->start.x, vPowerUps[i]->start.y,
+						vPowerUps[i]->end.x, vPowerUps[i]->end.y));
+					break;
+
+				case powerups::shield:
+					Draw->DrawBitmap(bmpShield, D2D1::RectF(vPowerUps[i]->start.x, vPowerUps[i]->start.y,
+						vPowerUps[i]->end.x, vPowerUps[i]->end.y));
+					break;
+				}
+			}
+		}
+
 		/////////////////////////////////////////////////////////////
 
 		//STATUS TEXT **********************************************
@@ -2288,6 +2388,10 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
 
 			wcscat_s(stat_txt, L", ракети: ");
 			wsprintf(add, L"%d", Hero->rockets_available);
+			wcscat_s(stat_txt, add);
+
+			wcscat_s(stat_txt, L", броня: ");
+			wsprintf(add, L"%d", Hero->armour);
 			wcscat_s(stat_txt, add);
 
 			wcscat_s(stat_txt, L", оръдие: ");

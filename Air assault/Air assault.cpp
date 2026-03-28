@@ -124,6 +124,10 @@ ID2D1Bitmap* bmpBigShot{ nullptr };
 ID2D1Bitmap* bmpRocketU{ nullptr };
 ID2D1Bitmap* bmpRocketD{ nullptr };
 
+ID2D1Bitmap* bmpRecord{ nullptr };
+ID2D1Bitmap* bmpFirstRecord{ nullptr };
+ID2D1Bitmap* bmpNoRecord{ nullptr };
+
 ID2D1Bitmap* bmpBoss1[4]{ nullptr };
 ID2D1Bitmap* bmpBoss2[2]{ nullptr };
 ID2D1Bitmap* bmpBoss3[10]{ nullptr };
@@ -254,6 +258,10 @@ void ClearResources()
 	if (!FreeMem(&bmpRocketU))LogErr(L"Error releasing D2D1 bmpRocketU !");
 	if (!FreeMem(&bmpRocketD))LogErr(L"Error releasing D2D1 bmpRocketD !");
 
+	if (!FreeMem(&bmpRecord))LogErr(L"Error releasing D2D1 bmpRecord !");
+	if (!FreeMem(&bmpFirstRecord))LogErr(L"Error releasing D2D1 bmpFirstRecord !");
+	if (!FreeMem(&bmpNoRecord))LogErr(L"Error releasing D2D1 bmpNoRecord !");
+
 	for (int i = 0; i < 4; ++i)if (!FreeMem(&bmpBoss1[i]))LogErr(L"Error releasing D2D1 bmpBoss1 !");
 	for (int i = 0; i < 2; ++i)if (!FreeMem(&bmpBoss2[i]))LogErr(L"Error releasing D2D1 bmpBoss2 !");
 	for (int i = 0; i < 10; ++i)if (!FreeMem(&bmpBoss3[i]))LogErr(L"Error releasing D2D1 bmpBoss3 !");
@@ -340,9 +348,32 @@ void GameOver()
 	PlaySound(NULL, NULL, NULL);
 	KillTimer(bHwnd, bTimer);
 
+	switch (CheckRecord())
+	{
+	case no_record:
+		Draw->BeginDraw();
+		Draw->DrawBitmap(bmpNoRecord, D2D1::RectF(0, 0, scr_width, scr_height));
+		Draw->EndDraw();
+		if (sound)PlaySound(L".\\res\\snd\\loose.wav", NULL, SND_SYNC);
+		else Sleep(3000);
+		break;
 
+	case first_record:
+		Draw->BeginDraw();
+		Draw->DrawBitmap(bmpFirstRecord, D2D1::RectF(0, 0, scr_width, scr_height));
+		Draw->EndDraw();
+		if (sound)PlaySound(L".\\res\\snd\\record.wav", NULL, SND_SYNC);
+		else Sleep(3000);
+		break;
 
-
+	case record:
+		Draw->BeginDraw();
+		Draw->DrawBitmap(bmpRecord, D2D1::RectF(0, 0, scr_width, scr_height));
+		Draw->EndDraw();
+		if (sound)PlaySound(L".\\res\\snd\\win.wav", NULL, SND_SYNC);
+		else Sleep(3000);
+		break;
+	}
 
 	bMsg.message = WM_QUIT;
 	bMsg.wParam = 0;
@@ -457,6 +488,60 @@ void LevelUp()
 
 	for (float i = -scr_height; i < 2 * scr_height; i += scr_height)vFields.push_back(dll::GROUND::create(tiles::field, 0, i));
 }
+void ShowRecord()
+{
+	int result = 0;
+	CheckFile(record_file, &result);
+
+	if (result == FILE_NOT_EXIST)
+	{
+		if (sound)mciSendString(L"play .\\res\\snd\\negative.wav", NULL, NULL, NULL);
+		MessageBox(bHwnd, L"Все още няма рекорд на играта !\n\nПостарай се повече !",
+			L"Липсва файл !", MB_OK | MB_APPLMODAL | MB_ICONEXCLAMATION);
+		return;
+	}
+
+	wchar_t rec_txt[100]{ L"НАЙ-ДОБЪР ПИЛОТ: " };
+	wchar_t saved_player[16]{ L"\0" };
+	wchar_t saved_score[5]{ L"\0" };
+
+	std::wifstream rec(record_file);
+	rec >> result;
+	wsprintf(saved_score, L"%d", result);
+	for (int i = 0; i < 16; ++i)
+	{
+		int letter = 0;
+		rec >> letter;
+		saved_player[i] = static_cast<wchar_t>(letter);
+	}
+	rec.close();
+
+	result = 0;
+
+	wcscat_s(rec_txt, saved_player);
+	wcscat_s(rec_txt, L"\n\nСВЕТОВЕН РЕКОРД: ");
+	wcscat_s(rec_txt, saved_score);
+
+	for (int i = 0; i < 100; ++i)
+	{
+		if (rec_txt[i] != '\0')++result;
+		else break;
+	}
+
+	if (bigText && hgltBrush)
+	{
+		if (sound)mciSendString(L"play .\\res\\snd\\showrec.wav", NULL, NULL, NULL);
+
+		for (int i = 0; i < 120; ++i)
+		{
+			Draw->BeginDraw();
+			Draw->DrawBitmap(bmpIntro[IntroFrame()], D2D1::RectF(0, 0, scr_width, scr_height));
+			Draw->DrawTextW(rec_txt, result, bigText, D2D1::RectF(100.0f, 200.0f, scr_width, scr_height), hgltBrush);
+			Draw->EndDraw();
+		}
+	}
+}
+
 
 INT_PTR CALLBACK DlgProc(HWND hwnd, UINT ReceivedMsg, WPARAM wParam, LPARAM lParam)
 {
@@ -714,7 +799,8 @@ LRESULT CALLBACK WinProc(HWND hwnd, UINT ReceivedMsg, WPARAM wParam, LPARAM lPar
 				pause = false;
 				break;
 			}
-			//LevelUp();
+			level_skipped = true;
+			LevelUp();
 			break;
 
 		case mExit:
@@ -722,7 +808,11 @@ LRESULT CALLBACK WinProc(HWND hwnd, UINT ReceivedMsg, WPARAM wParam, LPARAM lPar
 			break;
 
 
-
+		case mHoF:
+			pause = true;
+			ShowRecord();
+			pause = false;
+			break;
 		}
 		break;
 
@@ -1137,6 +1227,25 @@ void CreateResources()
 			if (!bmpRocketU)
 			{
 				LogErr(L"Error loading bmpRocketU !");
+				ErrExit(eD2D);
+			}
+
+			bmpRecord = Load(L".\\res\\img\\field\\record.png", Draw);
+			if (!bmpRecord)
+			{
+				LogErr(L"Error loading bmpRecord !");
+				ErrExit(eD2D);
+			}
+			bmpFirstRecord = Load(L".\\res\\img\\field\\first_record.png", Draw);
+			if (!bmpFirstRecord)
+			{
+				LogErr(L"Error loading bmpFirstRecord !");
+				ErrExit(eD2D);
+			}
+			bmpNoRecord = Load(L".\\res\\img\\field\\no_record.png", Draw);
+			if (!bmpNoRecord)
+			{
+				LogErr(L"Error loading bmpNoRecord !");
 				ErrExit(eD2D);
 			}
 

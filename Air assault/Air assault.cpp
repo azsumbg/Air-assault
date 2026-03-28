@@ -864,7 +864,7 @@ void ShowHelp()
 		if (!b3Hglt)Draw->DrawTextW(L"ПОМОЩ ЗА ИГРАТА", 16, nrmText, b3TxtRect, txtBrush);
 		else Draw->DrawTextW(L"ПОМОЩ ЗА ИГРАТА", 16, nrmText, b3TxtRect, hgltBrush);
 
-		Draw->DrawTextW(hlp_txt, result, midText, D2D1::RectF(100.0f, 80.0f, scr_width, scr_height), hgltBrush);
+		Draw->DrawTextW(hlp_txt, result, midText, D2D1::RectF(100.0f, 130.0f, scr_width, scr_height), hgltBrush);
 	}
 
 	Draw->EndDraw();
@@ -2013,6 +2013,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
 	}
 
 	CreateResources();
+
+	PlaySound(sound_file, NULL, SND_ASYNC | SND_LOOP);
 
 	while (bMsg.message != WM_QUIT)
 	{
